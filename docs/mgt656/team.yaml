@@ -4,11 +4,11 @@ ab_test_path: /341e00b
 framework: django
 database: postgres
 members:
-  - nickname: TODO
+  - nickname: misty-mink
     github: cookiemonster15
   - nickname: outstanding-hedgehog
     github: rebecca259
   - nickname: gleaming-elk
     github: vsleifer
-  - nickname: TODO
-    github: marcone-correria
+  - nickname: magnificent-snail
+    github: marcone-correia
