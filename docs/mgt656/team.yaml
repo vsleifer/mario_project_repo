@@ -5,8 +5,8 @@ framework: django
 database: postgres
 members:
   - nickname: TODO
-    github: cookie-monster15
-  - nickname: TODO
+    github: cookiemonster15
+  - nickname: outstanding-hedgehog
     github: rebecca259
   - nickname: TODO
     github: vsleifer

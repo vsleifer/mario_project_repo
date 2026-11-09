@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Team {{ team_nickname }} · Grad School Party{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <p class="eyebrow">Team {{ team_nickname }}</p>
+  <h1>Meet the team</h1>
+  <ul class="team-list">
+    {% for nickname in nicknames %}
+      <li>{{ nickname }}</li>
+    {% endfor %}
+  </ul>
+  <div class="dashboard-rule"></div>
+  <form method="post">
+    {% csrf_token %}
+    <button id="abtest" type="submit">{{ variant }}</button>
+  </form>
+</section>
+{% endblock %}
