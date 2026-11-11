@@ -8,7 +8,8 @@ Grad School Party is a Yale MGT 656 project. Sprint 1 is a walking skeleton with
 - Framework: Django
 - Database: PostgreSQL
 - Required A/B test route: `/341e00b`, with public stats at `/341e00b/stats`
-- Staging and production URLs: not recorded in this repository; verify and add the public staging URL before Sprint 1 submission
+- Staging: [grad-school-party-staging.onrender.com](https://grad-school-party-staging.onrender.com)
+- Production: not deployed yet; production is planned for Sprint 2
 - Team roster and course nicknames: recorded in [`docs/mgt656/team.yaml`](docs/mgt656/team.yaml)
 
 ## Local Setup
@@ -76,7 +77,7 @@ Run the test suite against the PostgreSQL database configured by `DATABASE_URL`:
 python manage.py test
 ```
 
-The tests cover signup, login/logout, dashboard access control, user persistence, and repeatable grader creation. Django creates and removes a separate test database automatically.
+The tests cover signup, login/logout, dashboard access control, user persistence, repeatable grader creation, and the A/B page, event counts, and stats response. Django creates and removes a separate test database automatically.
 
 ## Deployment
 
@@ -98,7 +99,7 @@ The team nickname is `wandering-shape`. Hashing it without a trailing newline gi
 printf %s wandering-shape | shasum
 ```
 
-The app serves the public A/B page at `/341e00b` and its JSON results at `/341e00b/stats`. The implementation keeps a random `kudos` or `thanks` variant in the visitor's session, stores at most one impression and click per visitor with timestamps, and calculates the preferred variant from database counts. `core.tests.ABTestPageTests` covers the route hash, public page, stable variants, event counts, and stats response. These local tests do not confirm a staging deployment.
+The app serves the public A/B page at `/341e00b` and JSON results at `/341e00b/stats`. The implementation keeps a random `kudos` or `thanks` variant in the visitor's session, stores at most one impression and click per visitor with timestamps, and calculates the preferred variant from database counts. Automated tests cover the route hash, public page, stable variants, event counts, and stats response. The staging login, A/B page, and stats endpoints have returned HTTP 200; verify grader-account login and the staging PostgreSQL configuration separately.
 
 ## Course Documentation
 
