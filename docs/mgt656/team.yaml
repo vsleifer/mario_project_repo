@@ -1,4 +1,4 @@
-# Complete framework/database after the team decision. Never store secrets here.
+# Never store secrets here.
 team_nickname: wandering-shape
 ab_test_path: /341e00b
 framework: django
