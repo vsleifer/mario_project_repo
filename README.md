@@ -7,9 +7,10 @@ Grad School Party is a Yale MGT 656 project. Sprint 1 is a walking skeleton with
 - Team nickname: `wandering-shape`
 - Framework: Django
 - Database: PostgreSQL
-- Required A/B test route: `/341e00b` (not implemented in Sprint 1)
-- Staging and production URLs: to be added when deployed
-- Team roster: GitHub usernames are in [`docs/mgt656/team.yaml`](docs/mgt656/team.yaml); course nicknames remain to be filled in
+- Required A/B test route: `/341e00b`, with public stats at `/341e00b/stats`
+- Staging: [grad-school-party-staging.onrender.com](https://grad-school-party-staging.onrender.com)
+- Production: not deployed yet; production is planned for Sprint 2
+- Team roster and course nicknames: recorded in [`docs/mgt656/team.yaml`](docs/mgt656/team.yaml)
 
 ## Local Setup
 
@@ -50,7 +51,7 @@ Requirements: Python 3.10+ and PostgreSQL 13+.
    python manage.py runserver 0.0.0.0:${PORT:-8000}
    ```
 
-   Open `http://localhost:8000/`. Create an account at `/signup/`; the dashboard is available after login.
+   Open `http://localhost:8000/341e00b` for the public A/B test. Create an account at `/signup/`; the dashboard is available after login.
 
 ## Grader Accounts
 
@@ -76,7 +77,7 @@ Run the test suite against the PostgreSQL database configured by `DATABASE_URL`:
 python manage.py test
 ```
 
-The tests cover signup, login/logout, dashboard access control, user persistence, and repeatable grader creation. Django creates and removes a separate test database automatically.
+The tests cover signup, login/logout, dashboard access control, user persistence, repeatable grader creation, and the A/B page, event counts, and stats response. Django creates and removes a separate test database automatically.
 
 ## Deployment
 
@@ -98,7 +99,7 @@ The team nickname is `wandering-shape`. Hashing it without a trailing newline gi
 printf %s wandering-shape | shasum
 ```
 
-The finished app must serve the public A/B page at `/341e00b` and its JSON results at `/341e00b/stats`. Requirements include a stable random `kudos` or `thanks` variant per visitor, exactly one matching button, one database-backed impression per visitor, at most one database-backed click per visitor, timestamps for both events, and a stats endpoint that calculates the preferred variant's click rate from the database. This work is not implemented or verified in Sprint 1.
+The app serves the public A/B page at `/341e00b` and JSON results at `/341e00b/stats`. The implementation keeps a random `kudos` or `thanks` variant in the visitor's session, stores at most one impression and click per visitor with timestamps, and calculates the preferred variant from database counts. Automated tests cover the route hash, public page, stable variants, event counts, and stats response. The staging login, A/B page, and stats endpoints have returned HTTP 200; verify grader-account login and the staging PostgreSQL configuration separately.
 
 ## Course Documentation
 
