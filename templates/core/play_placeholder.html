@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}{{ school_name }} · Grad School Party{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <p class="eyebrow">{{ school_name }}</p>
+  <h1>{{ school_name }} minigame</h1>
+  <p class="intro">This school's minigame is still under construction. Check back soon.</p>
+  <p class="form-footnote"><a href="{% url 'dashboard' %}">Back to the campus map</a></p>
+</section>
+{% endblock %}

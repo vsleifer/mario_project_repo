@@ -3,12 +3,30 @@
 {% block title %}Dashboard · Grad School Party{% endblock %}
 
 {% block content %}
-<section class="dashboard">
+<section class="dashboard dashboard-wide">
+  {% for message in messages %}<p class="flash">{{ message }}</p>{% endfor %}
   <p class="eyebrow">Your party starts here</p>
-  <h1>Welcome, {{ user.username }}.</h1>
-  <p class="intro">You’re signed in to Grad School Party. More of campus life is coming soon.</p>
+  <h1>{% if profile %}<span class="avatar-emoji" aria-hidden="true">{{ profile.avatar_emoji }}</span> {% endif %}Welcome, {{ user.username }}.</h1>
+  {% if profile %}
+    <p class="intro">
+      Home school: <strong>{{ profile.get_home_school_display }}</strong> · Avatar: <strong>{{ profile.get_avatar_display }}</strong>
+      · <a href="{% url 'edit_profile' %}">Change</a>
+    </p>
+  {% else %}
+    <p class="intro">You haven't picked a home school and avatar yet. <a href="{% url 'edit_profile' %}">Set up your profile</a>.</p>
+  {% endif %}
   <div class="dashboard-rule"></div>
-  <p class="status-label">SPRINT 1</p>
-  <p class="status-copy">Your account is ready.</p>
+  <p class="status-label">Campus map</p>
+  <ul class="campus-map">
+    {% for tile in tiles %}
+      <li>
+        <a class="school-tile{% if tile.is_home %} is-home{% endif %}" href="{% url 'play_school' tile.slug %}">
+          <span class="school-name">{{ tile.name }}</span>
+          <span class="school-credits">{{ tile.credits }} credit{{ tile.credits|pluralize }}</span>
+          {% if tile.is_home %}<span class="home-badge">Home</span>{% endif %}
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
 </section>
 {% endblock %}

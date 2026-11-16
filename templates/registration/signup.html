@@ -3,12 +3,19 @@
 {% block title %}Sign up · Grad School Party{% endblock %}
 
 {% block content %}
-<section class="auth-panel">
+<section class="auth-panel auth-panel-wide">
   <p class="eyebrow">Make yourself at home</p>
   <h1>Create an account</h1>
   <form method="post" class="auth-form">
     {% csrf_token %}
-    {{ form.as_p }}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      {% if field.name != "home_school" and field.name != "avatar" %}
+        <p>{{ field.label_tag }} {{ field }}{% if field.help_text %}<span class="helptext">{{ field.help_text|safe }}</span>{% endif %}</p>
+        {{ field.errors }}
+      {% endif %}
+    {% endfor %}
+    {% include "core/includes/profile_pickers.html" %}
     <button class="primary-button" type="submit">Sign up</button>
   </form>
   <p class="form-footnote">Already have an account? <a href="{% url 'login' %}">Log in</a></p>

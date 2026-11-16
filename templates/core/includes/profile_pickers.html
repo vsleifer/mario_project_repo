@@ -1,0 +1,25 @@
+{% load game_tags %}
+<fieldset class="picker">
+  <legend>Home school</legend>
+  <div class="picker-grid">
+    {% for choice in form.home_school %}
+      <label class="picker-option">
+        {{ choice.tag }}
+        <span>{{ choice.choice_label }}</span>
+      </label>
+    {% endfor %}
+  </div>
+  {{ form.home_school.errors }}
+</fieldset>
+<fieldset class="picker">
+  <legend>Avatar</legend>
+  <div class="picker-grid">
+    {% for choice in form.avatar %}
+      <label class="picker-option">
+        {{ choice.tag }}
+        <span><span class="avatar-emoji" aria-hidden="true">{{ choice.data.value|avatar_emoji }}</span> {{ choice.choice_label }}</span>
+      </label>
+    {% endfor %}
+  </div>
+  {{ form.avatar.errors }}
+</fieldset>
