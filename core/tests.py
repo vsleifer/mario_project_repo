@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from . import ai
 from .ai import AdvisorUnavailable
+from .minigames import MINIGAMES
 from .models import AdvisorTip, GameScore, Profile
 from .schools import SCHOOLS
 
@@ -383,3 +384,90 @@ class OpenRouterClientTests(TestCase):
     def test_long_replies_are_truncated(self, mock_urlopen):
         mock_urlopen.return_value = self._fake_response({"choices": [{"message": {"content": "x" * 2000}}]})
         self.assertEqual(len(ai.request_completion([])), ai.MAX_TIP_CHARS)
+
+
+class LawMinigameTests(TestCase):
+    """Story #14: the Law School "Library Stack" minigame and its score endpoint."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="stacker", password="A-strong-test-password-42")
+        self.client.force_login(self.user)
+        self.url = reverse("submit_score", args=["law"])
+
+    def post_score(self, payload, raw=False):
+        body = payload if raw else json.dumps(payload)
+        return self.client.post(self.url, body, content_type="application/json")
+
+    def test_law_page_serves_the_game_and_other_schools_stay_placeholders(self):
+        response = self.client.get(reverse("play_school", args=["law"]))
+        self.assertContains(response, "Library Stack")
+        self.assertContains(response, 'id="law-stack"')
+        self.assertContains(response, "js/law_stack.js")
+        self.assertContains(response, self.url)
+
+        response = self.client.get(reverse("play_school", args=["art"]))
+        self.assertContains(response, "under construction")
+
+    def test_valid_score_is_saved_with_user_school_and_time(self):
+        response = self.post_score({"score": 12})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"saved": True, "score": 12, "school_credits": 12})
+
+        saved = GameScore.objects.get(user=self.user)
+        self.assertEqual((saved.school, saved.score), ("law", 12))
+        self.assertIsNotNone(saved.created_at)
+
+        self.assertEqual(self.post_score({"score": 5}).json()["school_credits"], 17)
+
+    def test_scores_outside_the_valid_range_are_rejected(self):
+        max_score = MINIGAMES["law"]["max_score"]
+        self.assertEqual(self.post_score({"score": max_score}).status_code, 200)
+        self.assertEqual(self.post_score({"score": 0}).status_code, 200)
+        GameScore.objects.all().delete()
+
+        with self.assertLogs("core.views", level="WARNING"):
+            for bad in [-1, max_score + 1, 10_000, 3.5, "12", True, None]:
+                response = self.post_score({"score": bad})
+                self.assertEqual(response.status_code, 400, bad)
+                self.assertIn("error", response.json())
+        self.assertFalse(GameScore.objects.exists())
+
+    def test_malformed_requests_are_rejected(self):
+        for body in ["not json", "{}", "[]", ""]:
+            self.assertEqual(self.post_score(body, raw=True).status_code, 400, body)
+        self.assertFalse(GameScore.objects.exists())
+
+    def test_score_endpoint_requires_login_post_and_a_real_game(self):
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+        self.assertEqual(
+            self.client.post(reverse("submit_score", args=["art"]), '{"score": 1}', content_type="application/json").status_code,
+            404,
+        )
+        self.client.logout()
+        response = self.post_score({"score": 3})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(GameScore.objects.exists())
+
+    def test_score_endpoint_enforces_csrf(self):
+        client = self.client_class(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        response = client.post(self.url, '{"score": 3}', content_type="application/json")
+        self.assertEqual(response.status_code, 403)
+
+    def test_saved_score_shows_on_the_campus_map(self):
+        self.post_score({"score": 9})
+        response = self.client.get(reverse("dashboard"))
+        tiles = {t["slug"]: t for t in response.context["tiles"]}
+        self.assertEqual(tiles["law"]["credits"], 9)
+        self.assertTrue(tiles["law"]["has_game"])
+        self.assertContains(response, "9 credits")
+
+
+class NewHavenMapTests(TestCase):
+    def test_map_has_a_pin_for_each_school(self):
+        user = User.objects.create_user(username="mapper", password="A-strong-test-password-42")
+        self.client.force_login(user)
+        response = self.client.get(reverse("dashboard"))
+        self.assertContains(response, 'class="nh-map"')
+        self.assertContains(response, 'class="map-pin', count=len(SCHOOLS))
+        self.assertContains(response, "New Haven")

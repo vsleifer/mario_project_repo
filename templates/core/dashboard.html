@@ -30,12 +30,13 @@
   </div>
   <div class="dashboard-rule"></div>
   <p class="status-label">Campus map</p>
+  {% include "core/includes/campus_map.html" %}
   <ul class="campus-map">
     {% for tile in tiles %}
       <li>
         <a class="school-tile{% if tile.is_home %} is-home{% endif %}" href="{% url 'play_school' tile.slug %}">
           <span class="school-name">{{ tile.name }}</span>
-          <span class="school-credits">{{ tile.credits }} credit{{ tile.credits|pluralize }}</span>
+          <span class="school-credits">{{ tile.credits }} credit{{ tile.credits|pluralize }}{% if tile.has_game %} · <strong>Play now</strong>{% else %} · Coming soon{% endif %}</span>
           {% if tile.is_home %}<span class="home-badge">Home</span>{% endif %}
         </a>
       </li>
