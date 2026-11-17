@@ -1,6 +1,6 @@
 # Grad School Party
 
-Grad School Party is a Yale MGT 656 project. Sprint 1 is a walking skeleton with Django authentication, signup, login/logout, and a protected dashboard backed by PostgreSQL. Minigames, the campus map, AI integration, and leaderboards are not part of this sprint.
+Grad School Party is a Yale MGT 656 project: a campus game across six Yale graduate schools. Players sign up, pick a home school and avatar, explore a campus map, and can ask an AI "Dean" for a tip. Minigames and leaderboards are planned for later sprints.
 
 ## Project Status
 
@@ -9,7 +9,7 @@ Grad School Party is a Yale MGT 656 project. Sprint 1 is a walking skeleton with
 - Database: PostgreSQL
 - Required A/B test route: `/341e00b`, with public stats at `/341e00b/stats`
 - Staging: [grad-school-party-staging.onrender.com](https://grad-school-party-staging.onrender.com)
-- Production: not deployed yet; production is planned for Sprint 2
+- Production: TODO: add the production URL once deployed (separate Render service and Neon database)
 - Team roster and course nicknames: recorded in [`docs/mgt656/team.yaml`](docs/mgt656/team.yaml)
 
 ## Local Setup
@@ -41,6 +41,8 @@ Requirements: Python 3.10+ and PostgreSQL 13+.
    ```sh
    python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
    ```
+
+   To try the AI advisor locally, also set `OPENROUTER_API_KEY` (and optionally `OPENROUTER_MODEL`). Without a key, the app runs normally and the advisor says it is unavailable.
 
    `.env` and `.env.local` are ignored by Git. Never commit them or share their values. Set `DEBUG=False` and a production-only secret in deployment, and set `ALLOWED_HOSTS` to the deployed hostnames.
 
@@ -77,11 +79,11 @@ Run the test suite against the PostgreSQL database configured by `DATABASE_URL`:
 python manage.py test
 ```
 
-The tests cover signup, login/logout, dashboard access control, user persistence, repeatable grader creation, and the A/B page, event counts, and stats response. Django creates and removes a separate test database automatically.
+The tests cover signup, login/logout, dashboard access control, user persistence, repeatable grader creation, profiles and the campus map, the AI advisor, and the A/B page, event counts, and stats response. OpenRouter is always mocked, so the tests make no network calls. Django creates and removes a separate test database automatically.
 
 ## Deployment
 
-Provide `SECRET_KEY`, `DATABASE_URL`, `DEBUG=False`, and comma-separated `ALLOWED_HOSTS` as environment variables in the hosting provider. Set `PORT` if the provider supplies one. Install from `requirements.txt`, run `python manage.py migrate` and `python manage.py collectstatic --noinput` as release steps, and start the web process with the included `Procfile` (Gunicorn binds to `0.0.0.0:$PORT`). Use a TLS-enabled PostgreSQL URL in production. Staging and production should use separate databases and public URLs.
+Provide `SECRET_KEY`, `DATABASE_URL`, `DEBUG=False`, comma-separated `ALLOWED_HOSTS`, and `OPENROUTER_API_KEY` as environment variables in the hosting provider. Optional: `OPENROUTER_MODEL` (default `anthropic/claude-haiku-4.5`) and `ADVISOR_DAILY_LIMIT` (default 5). Set `PORT` if the provider supplies one. Install from `requirements.txt`, run `python manage.py migrate` and `python manage.py collectstatic --noinput` as release steps, and start the web process with the included `Procfile` (Gunicorn binds to `0.0.0.0:$PORT`). Use a TLS-enabled PostgreSQL URL in production. Staging and production should use separate databases and public URLs.
 
 ## Working Agreement
 

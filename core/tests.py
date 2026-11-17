@@ -1,14 +1,20 @@
+import io
 import json
 import os
+import urllib.error
+from datetime import timedelta
 from io import StringIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
-from .models import GameScore, Profile
+from . import ai
+from .ai import AdvisorUnavailable
+from .models import AdvisorTip, GameScore, Profile
 from .schools import SCHOOLS
 
 
@@ -270,3 +276,110 @@ class CampusMapTests(TestCase):
     def test_map_has_mobile_viewport_and_responsive_grid(self):
         response = self.client.get(reverse("dashboard"))
         self.assertContains(response, 'name="viewport"')
+
+
+class AdvisorTipTests(TestCase):
+    """The AI Dean. OpenRouter is always mocked; no test makes a network call."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="advisee", password="A-strong-test-password-42")
+        Profile.objects.create(user=self.user, home_school="law", avatar="owl")
+        GameScore.objects.create(user=self.user, school="law", score=7)
+        self.client.force_login(self.user)
+
+    def test_tip_requires_login_and_post(self):
+        self.client.logout()
+        response = self.client.post(reverse("advisor_tip"))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('advisor_tip')}")
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get(reverse("advisor_tip")).status_code, 405)
+
+    @override_settings(OPENROUTER_API_KEY="test-key", OPENROUTER_MODEL="test/model")
+    @patch("core.ai.request_completion", return_value="Head to Drama next, you have no credits there yet!")
+    def test_tip_is_saved_and_shown_on_dashboard(self, mock_completion):
+        response = self.client.post(reverse("advisor_tip"), follow=True)
+
+        self.assertContains(response, "Head to Drama next")
+        tip = AdvisorTip.objects.get(user=self.user)
+        self.assertEqual(tip.model_name, "test/model")
+        # The prompt describes this player's profile and credits.
+        prompt = mock_completion.call_args.args[0][-1]["content"]
+        self.assertIn("Law", prompt)
+        self.assertIn("Owl", prompt)
+        self.assertIn("Law: 7", prompt)
+
+    @patch("core.ai.request_completion", side_effect=AdvisorUnavailable("boom"))
+    def test_llm_failure_shows_friendly_message_and_saves_nothing(self, _mock):
+        with self.assertLogs("core.ai", level="WARNING"):
+            response = self.client.post(reverse("advisor_tip"), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "out of the office")
+        self.assertFalse(AdvisorTip.objects.exists())
+
+    @override_settings(ADVISOR_DAILY_LIMIT=2)
+    @patch("core.ai.request_completion", return_value="A tip.")
+    def test_daily_limit_stops_further_llm_calls(self, mock_completion):
+        for _ in range(3):
+            response = self.client.post(reverse("advisor_tip"), follow=True)
+        self.assertEqual(mock_completion.call_count, 2)
+        self.assertEqual(AdvisorTip.objects.filter(user=self.user).count(), 2)
+        self.assertContains(response, "all of today")
+        self.assertContains(response, "0 tips left today")
+
+    def test_tips_older_than_a_day_do_not_count_toward_the_limit(self):
+        old = AdvisorTip.objects.create(user=self.user, text="old", model_name="m")
+        AdvisorTip.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=2))
+        response = self.client.get(reverse("dashboard"))
+        self.assertContains(response, "5 tips left today")
+
+
+class OpenRouterClientTests(TestCase):
+    """The HTTP layer, with urllib's urlopen mocked."""
+
+    def _fake_response(self, payload):
+        response = MagicMock()
+        response.__enter__.return_value = io.BytesIO(json.dumps(payload).encode())
+        return response
+
+    @override_settings(OPENROUTER_API_KEY="")
+    @patch("core.ai.urllib.request.urlopen")
+    def test_missing_key_never_calls_the_network(self, mock_urlopen):
+        with self.assertRaises(AdvisorUnavailable):
+            ai.request_completion([{"role": "user", "content": "hi"}])
+        mock_urlopen.assert_not_called()
+
+    @override_settings(OPENROUTER_API_KEY="test-key", OPENROUTER_MODEL="test/model")
+    @patch("core.ai.urllib.request.urlopen")
+    def test_sends_key_and_model_server_side_and_returns_text(self, mock_urlopen):
+        mock_urlopen.return_value = self._fake_response({"choices": [{"message": {"content": "  Go to SOM.  "}}]})
+
+        text = ai.request_completion([{"role": "user", "content": "hi"}])
+
+        self.assertEqual(text, "Go to SOM.")
+        request = mock_urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, ai.OPENROUTER_URL)
+        self.assertEqual(request.get_header("Authorization"), "Bearer test-key")
+        self.assertEqual(json.loads(request.data)["model"], "test/model")
+        self.assertIn("timeout", mock_urlopen.call_args.kwargs)
+
+    @override_settings(OPENROUTER_API_KEY="test-key")
+    @patch("core.ai.urllib.request.urlopen")
+    def test_network_errors_and_bad_payloads_raise_advisor_unavailable(self, mock_urlopen):
+        for failure in [
+            urllib.error.URLError("down"),
+            TimeoutError(),
+            self._fake_response({"error": "no choices"}),
+            self._fake_response({"choices": [{"message": {"content": ""}}]}),
+        ]:
+            if isinstance(failure, BaseException):
+                mock_urlopen.side_effect, mock_urlopen.return_value = failure, None
+            else:
+                mock_urlopen.side_effect, mock_urlopen.return_value = None, failure
+            with self.assertRaises(AdvisorUnavailable):
+                ai.request_completion([{"role": "user", "content": "hi"}])
+
+    @override_settings(OPENROUTER_API_KEY="test-key")
+    @patch("core.ai.urllib.request.urlopen")
+    def test_long_replies_are_truncated(self, mock_urlopen):
+        mock_urlopen.return_value = self._fake_response({"choices": [{"message": {"content": "x" * 2000}}]})
+        self.assertEqual(len(ai.request_completion([])), ai.MAX_TIP_CHARS)

@@ -54,3 +54,18 @@ class GameScore(models.Model):
 
     def __str__(self):
         return f"{self.user} {self.school}: {self.score}"
+
+
+class AdvisorTip(models.Model):
+    """One tip the AI Dean gave a player. Stored so the dashboard can show it and limit usage."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="advisor_tips")
+    text = models.TextField()
+    model_name = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "created_at"])]
+
+    def __str__(self):
+        return f"{self.user} tip at {self.created_at:%Y-%m-%d %H:%M}"

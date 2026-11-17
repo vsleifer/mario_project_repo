@@ -99,3 +99,17 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# AI feature: the server calls the LLM through OpenRouter. Leave the key unset
+# to run without AI; the dashboard then says the advisor is unavailable.
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "anthropic/claude-haiku-4.5")
+ADVISOR_DAILY_LIMIT = int(os.getenv("ADVISOR_DAILY_LIMIT", "5"))
+
+# 12-factor: write logs to stdout so the host collects them.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["console"], "level": os.getenv("LOG_LEVEL", "INFO")},
+}
