@@ -8,6 +8,9 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
+from .models import GameScore, Profile
+from .schools import SCHOOLS
+
 
 User = get_user_model()
 
@@ -33,6 +36,8 @@ class AuthenticationTests(TestCase):
                 "username": "newgrad",
                 "password1": "Another-strong-test-password-42",
                 "password2": "Another-strong-test-password-42",
+                "home_school": "som",
+                "avatar": "bulldog",
             },
         )
 
@@ -157,3 +162,111 @@ class ABTestPageTests(TestCase):
 
     def test_stats_with_no_data(self):
         self.assertEqual(self.client.get(self.stats).json()["preferred"], "kudos")
+
+
+class ProfileTests(TestCase):
+    """Story #12: home school and avatar."""
+
+    def test_signup_saves_home_school_and_avatar(self):
+        response = self.client.post(
+            reverse("signup"),
+            {
+                "username": "newgrad",
+                "password1": "Another-strong-test-password-42",
+                "password2": "Another-strong-test-password-42",
+                "home_school": "law",
+                "avatar": "owl",
+            },
+        )
+        self.assertRedirects(response, reverse("dashboard"))
+        profile = Profile.objects.get(user__username="newgrad")
+        self.assertEqual((profile.home_school, profile.avatar), ("law", "owl"))
+
+    def test_signup_offers_all_six_schools(self):
+        response = self.client.get(reverse("signup"))
+        for name in ["SOM", "Medicine", "Art", "Law", "Environment", "Drama"]:
+            self.assertContains(response, name)
+
+    def test_signup_requires_school_and_rejects_unknown_avatar(self):
+        response = self.client.post(
+            reverse("signup"),
+            {
+                "username": "badgrad",
+                "password1": "Another-strong-test-password-42",
+                "password2": "Another-strong-test-password-42",
+                "avatar": "dragon",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(username="badgrad").exists())
+        self.assertFalse(Profile.objects.exists())
+
+    def test_dashboard_shows_profile(self):
+        user = User.objects.create_user(username="gradstudent", password="A-strong-test-password-42")
+        Profile.objects.create(user=user, home_school="drama", avatar="fox")
+        self.client.force_login(user)
+        response = self.client.get(reverse("dashboard"))
+        self.assertContains(response, "Drama")
+        self.assertContains(response, "Fox")
+        self.assertContains(response, "🦊")
+
+    def test_user_without_profile_is_prompted_and_can_create_one(self):
+        user = User.objects.create_user(username="grader-one", password="A-strong-test-password-42")
+        self.client.force_login(user)
+        self.assertContains(self.client.get(reverse("dashboard")), reverse("edit_profile"))
+
+        response = self.client.post(reverse("edit_profile"), {"home_school": "art", "avatar": "robot"})
+        self.assertRedirects(response, reverse("dashboard"))
+        self.assertEqual(user.profile.home_school, "art")
+
+    def test_player_can_change_profile_later(self):
+        user = User.objects.create_user(username="gradstudent", password="A-strong-test-password-42")
+        Profile.objects.create(user=user, home_school="som", avatar="cat")
+        self.client.force_login(user)
+
+        response = self.client.post(reverse("edit_profile"), {"home_school": "medicine", "avatar": "astronaut"})
+        self.assertRedirects(response, reverse("dashboard"))
+        user.profile.refresh_from_db()
+        self.assertEqual((user.profile.home_school, user.profile.avatar), ("medicine", "astronaut"))
+        self.assertEqual(Profile.objects.filter(user=user).count(), 1)
+
+    def test_profile_page_requires_login(self):
+        response = self.client.get(reverse("edit_profile"))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('edit_profile')}")
+
+
+class CampusMapTests(TestCase):
+    """Story #13: campus map hub."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="gradstudent", password="A-strong-test-password-42")
+        Profile.objects.create(user=self.user, home_school="law", avatar="owl")
+        self.client.force_login(self.user)
+
+    def test_dashboard_shows_six_tiles_linking_to_minigames(self):
+        response = self.client.get(reverse("dashboard"))
+        for slug, name in SCHOOLS:
+            self.assertContains(response, reverse("play_school", args=[slug]))
+            self.assertContains(response, f'<span class="school-name">{name}</span>', html=True)
+        self.assertContains(response, "school-tile", count=6)
+
+    def test_tiles_show_credits_per_school_for_this_user_only(self):
+        GameScore.objects.create(user=self.user, school="law", score=3)
+        GameScore.objects.create(user=self.user, school="law", score=4)
+        other = User.objects.create_user(username="other", password="A-strong-test-password-42")
+        GameScore.objects.create(user=other, school="law", score=50)
+
+        tiles = {t["slug"]: t for t in self.client.get(reverse("dashboard")).context["tiles"]}
+        self.assertEqual(tiles["law"]["credits"], 7)
+        self.assertEqual(tiles["art"]["credits"], 0)
+        self.assertTrue(tiles["law"]["is_home"])
+
+    def test_school_pages_are_placeholders_and_unknown_school_404s(self):
+        response = self.client.get(reverse("play_school", args=["drama"]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Drama")
+        self.assertEqual(self.client.get("/play/not-a-school/").status_code, 404)
+
+    def test_map_has_mobile_viewport_and_responsive_grid(self):
+        response = self.client.get(reverse("dashboard"))
+        self.assertContains(response, 'name="viewport"')

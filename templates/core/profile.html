@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Your profile · Grad School Party{% endblock %}
+
+{% block content %}
+<section class="auth-panel auth-panel-wide">
+  <p class="eyebrow">{% if is_new %}One more step{% else %}Your profile{% endif %}</p>
+  <h1>{% if is_new %}Pick your school{% else %}Edit profile{% endif %}</h1>
+  <form method="post" class="auth-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% include "core/includes/profile_pickers.html" %}
+    <button class="primary-button" type="submit">Save</button>
+  </form>
+  <p class="form-footnote"><a href="{% url 'dashboard' %}">Back to campus</a></p>
+</section>
+{% endblock %}

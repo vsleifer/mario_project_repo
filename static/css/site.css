@@ -229,6 +229,135 @@ h1 {
   text-align: center;
 }
 
+.dashboard-wide {
+  max-width: 1000px;
+}
+
+.flash {
+  margin: 0 0 20px;
+  padding: 10px 14px;
+  border-left: 4px solid var(--highlight);
+  background: var(--surface);
+}
+
+.avatar-emoji {
+  font-style: normal;
+}
+
+.campus-map {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.school-tile {
+  position: relative;
+  min-height: 110px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.school-tile:hover,
+.school-tile:focus-visible {
+  transform: translateY(-2px);
+  border-top-color: var(--accent);
+}
+
+.school-tile.is-home {
+  border-top-color: var(--highlight);
+}
+
+.school-name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+}
+
+.school-credits {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.home-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--highlight);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.auth-panel-wide {
+  width: min(100%, 560px);
+}
+
+.helptext {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.auth-form .helptext ul {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.picker {
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+}
+
+.picker legend {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.auth-form .picker-option {
+  margin: 0;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.auth-form .picker-option input {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+}
+
+.picker-option:has(input:checked) {
+  border-color: var(--accent);
+  background: rgb(200 68 49 / 6%);
+}
+
 @keyframes arrive {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -256,6 +385,10 @@ h1 {
 
   .dashboard {
     padding-block: 58px;
+  }
+
+  .campus-map {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .intro {
