@@ -15,6 +15,19 @@
   {% else %}
     <p class="intro">You haven't picked a home school and avatar yet. <a href="{% url 'edit_profile' %}">Set up your profile</a>.</p>
   {% endif %}
+  <div class="advisor-card">
+    <p class="status-label">Ask the Dean <span class="ai-badge">AI</span></p>
+    {% if latest_tip %}
+      <p class="advisor-tip">{{ latest_tip.text }}</p>
+    {% else %}
+      <p class="advisor-tip advisor-empty">Not sure where to go next? The Dean can suggest a school based on your credits.</p>
+    {% endif %}
+    <form method="post" action="{% url 'advisor_tip' %}">
+      {% csrf_token %}
+      <button class="primary-button" type="submit"{% if not tips_left %} disabled{% endif %}>Get a tip</button>
+      <span class="advisor-quota">{{ tips_left }} tip{{ tips_left|pluralize }} left today</span>
+    </form>
+  </div>
   <div class="dashboard-rule"></div>
   <p class="status-label">Campus map</p>
   <ul class="campus-map">
