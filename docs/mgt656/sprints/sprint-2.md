@@ -18,9 +18,11 @@
 
 ## Staging and production
 
-Staging: [grad-school-party-staging.onrender.com](https://grad-school-party-staging.onrender.com). Signup with school and avatar works, `/profile/`, `/play/<school>/`, and `/advisor/tip/` require login, and the A/B page and `/341e00b/stats` return 200. The minigame and advisor routes are deployed and require login. TODO before submitting: log in with the grader account and confirm that the New Haven map loads, a round of each game saves its score, and "Get a tip" returns a tip (this needs `OPENROUTER_API_KEY` set on Render).
+Staging: [grad-school-party-staging.onrender.com](https://grad-school-party-staging.onrender.com). Signup with school and avatar works, `/profile/`, `/play/<school>/`, and `/advisor/tip/` require login, and the A/B page and `/341e00b/stats` return 200. The minigame and advisor routes are deployed and require login.
 
-Production: TODO: add the URL. It is a separate Render service with its own Neon database, deployed from `main`, with its own `SECRET_KEY` and grader accounts created by `create_fake_graders`.
+Production: [grad-school-party-production.onrender.com](https://grad-school-party-production.onrender.com). It is a separate Render service with its own Neon database (a separate Neon project, `grad-school-party-production`), deployed from `main`, with its own `SECRET_KEY`. The grader account was created there with `create_fake_graders`. Logged in as the grader on production, we confirmed that the New Haven map loads, the minigames save scores, and "Get a tip" returns a tip from the LLM. The login page, the A/B page, and `/341e00b/stats` return 200.
+
+Getting "Ask the Dean" working on production took three fixes, each found by reading the warning the app writes to the Render logs when a tip fails: the first OpenRouter key belonged to an account with no credits (402), with a working key, a leftover `OPENROUTER_MODEL` setting still got "Too Many Requests" (429), and clearing that setting left an empty model name (400). The app showed "The Dean is out of the office" each time instead of an error, as designed.
 
 ## Working with coding agents
 
