@@ -16,7 +16,7 @@ from . import ai
 from .ai import AdvisorUnavailable
 from .minigames import MINIGAMES
 from .models import AdvisorTip, GameScore, Profile
-from .schools import SCHOOLS
+from .schools import LOCATIONS, SCHOOLS
 
 
 User = get_user_model()
@@ -250,12 +250,12 @@ class CampusMapTests(TestCase):
         Profile.objects.create(user=self.user, home_school="law", avatar="owl")
         self.client.force_login(self.user)
 
-    def test_dashboard_shows_six_tiles_linking_to_minigames(self):
+    def test_dashboard_shows_a_tile_for_each_school_and_gryphons(self):
         response = self.client.get(reverse("dashboard"))
-        for slug, name in SCHOOLS:
+        for slug, name in LOCATIONS:
             self.assertContains(response, reverse("play_school", args=[slug]))
             self.assertContains(response, f'<span class="school-name">{name}</span>', html=True)
-        self.assertContains(response, "school-tile", count=6)
+        self.assertContains(response, "school-tile", count=7)
 
     def test_tiles_show_credits_per_school_for_this_user_only(self):
         GameScore.objects.create(user=self.user, school="law", score=3)
@@ -405,7 +405,7 @@ class LawMinigameTests(TestCase):
         self.assertContains(response, "js/law_stack.js")
         self.assertContains(response, self.url)
 
-        response = self.client.get(reverse("play_school", args=["art"]))
+        response = self.client.get(reverse("play_school", args=["drama"]))
         self.assertContains(response, "under construction")
 
     def test_valid_score_is_saved_with_user_school_and_time(self):
@@ -440,7 +440,7 @@ class LawMinigameTests(TestCase):
     def test_score_endpoint_requires_login_post_and_a_real_game(self):
         self.assertEqual(self.client.get(self.url).status_code, 405)
         self.assertEqual(
-            self.client.post(reverse("submit_score", args=["art"]), '{"score": 1}', content_type="application/json").status_code,
+            self.client.post(reverse("submit_score", args=["drama"]), '{"score": 1}', content_type="application/json").status_code,
             404,
         )
         self.client.logout()
@@ -469,5 +469,69 @@ class NewHavenMapTests(TestCase):
         self.client.force_login(user)
         response = self.client.get(reverse("dashboard"))
         self.assertContains(response, 'class="nh-map"')
-        self.assertContains(response, 'class="map-pin', count=len(SCHOOLS))
+        self.assertContains(response, 'class="map-pin', count=len(LOCATIONS))
         self.assertContains(response, "New Haven")
+
+
+class MoreMinigamesTests(TestCase):
+    """Stories #21-#24: SOMchella, Sugarbush, Gryphon's, and Suture Lab."""
+
+    GAMES = {
+        "som": ("SOMchella", "js/games/somchella.js"),
+        "environment": ("Sugarbush", "js/games/sugarbush.js"),
+        "gryphons": ("Last Call at Gryphon", "js/games/gryphons.js"),
+        "medicine": ("Suture Lab", "js/games/suture.js"),
+    }
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="player", password="A-strong-test-password-42")
+        Profile.objects.create(user=self.user, home_school="som", avatar="fox")
+        self.client.force_login(self.user)
+
+    def test_each_game_page_loads_its_script_and_score_url(self):
+        for slug, (title, script) in self.GAMES.items():
+            response = self.client.get(reverse("play_school", args=[slug]))
+            self.assertContains(response, title)
+            self.assertContains(response, "js/minigame.js")
+            self.assertContains(response, script)
+            self.assertContains(response, reverse("submit_score", args=[slug]))
+            self.assertContains(response, MINIGAMES[slug]["credits_label"])
+
+    def test_each_game_saves_scores_in_range_and_rejects_the_rest(self):
+        for slug in self.GAMES:
+            url = reverse("submit_score", args=[slug])
+            top = MINIGAMES[slug]["max_score"]
+            ok = self.client.post(url, json.dumps({"score": top}), content_type="application/json")
+            self.assertEqual(ok.status_code, 200, slug)
+            self.assertEqual(ok.json()["school_credits"], top)
+            with self.assertLogs("core.views", level="WARNING"):
+                too_high = self.client.post(url, json.dumps({"score": top + 1}), content_type="application/json")
+            self.assertEqual(too_high.status_code, 400, slug)
+            self.assertEqual(GameScore.objects.filter(user=self.user, school=slug).count(), 1)
+
+    def test_only_drama_and_art_are_still_placeholders(self):
+        playable = {slug for slug, _ in LOCATIONS if slug in MINIGAMES}
+        self.assertEqual(playable, {"law", "som", "environment", "gryphons", "medicine"})
+        for slug in ["drama", "art"]:
+            self.assertContains(self.client.get(reverse("play_school", args=[slug])), "under construction")
+
+    def test_gryphons_is_on_the_map_with_social_credits_but_is_not_a_home_school(self):
+        GameScore.objects.create(user=self.user, school="gryphons", score=12)
+        response = self.client.get(reverse("dashboard"))
+        tiles = {t["slug"]: t for t in response.context["tiles"]}
+        self.assertEqual(tiles["gryphons"]["credits"], 12)
+        self.assertTrue(tiles["gryphons"]["is_social"])
+        self.assertContains(response, "12 social credits")
+
+        signup = self.client.get(reverse("signup"))
+        self.assertNotContains(signup, 'value="gryphons"')
+        response = self.client.post(reverse("edit_profile"), {"home_school": "gryphons", "avatar": "fox"})
+        self.assertEqual(response.status_code, 200)            # form error, not saved
+        self.assertEqual(Profile.objects.get(user=self.user).home_school, "som")
+
+    @patch("core.ai.request_completion", return_value="Try Gryphon's.")
+    def test_advisor_prompt_includes_social_credits(self, mock_completion):
+        GameScore.objects.create(user=self.user, school="gryphons", score=4)
+        self.client.post(reverse("advisor_tip"))
+        prompt = mock_completion.call_args.args[0][-1]["content"]
+        self.assertIn("Gryphon's Pub: 4", prompt)

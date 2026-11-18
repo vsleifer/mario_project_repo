@@ -17,7 +17,7 @@ from . import ai
 from .forms import ProfileForm, SignupForm
 from .minigames import MINIGAMES
 from .models import AdvisorTip, GameScore, Profile
-from .schools import MAP_PINS, SCHOOL_NAMES, SCHOOLS
+from .schools import LOCATION_NAMES, LOCATIONS, MAP_PINS, SOCIAL_SLUGS
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +47,10 @@ def dashboard(request):
             "credits": credits.get(slug, 0),
             "is_home": profile is not None and profile.home_school == slug,
             "has_game": slug in MINIGAMES,
+            "is_social": slug in SOCIAL_SLUGS,
             "pin": MAP_PINS[slug],
         }
-        for slug, name in SCHOOLS
+        for slug, name in LOCATIONS
     ]
     context = {
         "profile": profile,
@@ -96,9 +97,9 @@ def edit_profile(request):
 
 @login_required
 def play_school(request, school):
-    if school not in SCHOOL_NAMES:
+    if school not in LOCATION_NAMES:
         raise Http404("Unknown school")
-    context = {"school_slug": school, "school_name": SCHOOL_NAMES[school]}
+    context = {"school_slug": school, "school_name": LOCATION_NAMES[school]}
     game = MINIGAMES.get(school)
     if game is None:
         return render(request, "core/play_placeholder.html", context)
