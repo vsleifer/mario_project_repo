@@ -473,6 +473,7 @@ h1 {
 .map-pin.has-game .pin-marker { fill: var(--accent); }
 .map-pin.has-game .pin-label { stroke: var(--accent); }
 .map-pin.is-home .pin-label { fill: #eef6dc; }
+.map-pin.is-social .pin-label { fill: #fbf3dc; }
 
 .map-pin:hover .pin-label,
 .map-pin:focus-visible .pin-label {
@@ -554,6 +555,17 @@ h1 {
 }
 
 .game-actions .text-button { color: #ffffff; }
+
+.game-hud [data-hud="status"] {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.game-options {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 14px;
+}
 
 @media (max-width: 540px) {
   .topbar {

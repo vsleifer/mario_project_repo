@@ -1,6 +1,6 @@
 # Grad School Party
 
-Grad School Party is a Yale MGT 656 project: a campus game across six Yale graduate schools. Players sign up, pick a home school and avatar, explore an illustrated map of Yale in New Haven, play minigames to earn credits at each school (the Law School's "Library Stack" is the first), and can ask an AI "Dean" for a tip. More minigames and leaderboards are planned for later sprints.
+Grad School Party is a Yale MGT 656 project: a campus game across six Yale graduate schools. Players sign up, pick a home school and avatar, explore an illustrated map of Yale in New Haven, play minigames to earn credits (Law, SOM, Environment, Medicine, and Gryphon's Pub so far), and can ask an AI "Dean" for a tip. Drama and Art games and leaderboards are planned for later sprints.
 
 ## Project Status
 

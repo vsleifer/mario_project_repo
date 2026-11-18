@@ -16,7 +16,7 @@ import urllib.request
 
 from django.conf import settings
 
-from .schools import SCHOOL_NAMES
+from .schools import LOCATION_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ MAX_TIP_CHARS = 500
 SYSTEM_PROMPT = (
     "You are the Dean of Grad School Party, a light-hearted campus game set at six Yale "
     "graduate schools (SOM, Medicine, Art, Law, Environment, Drama). Players earn credits "
-    "by playing each school's minigame. Give the player one short, upbeat, specific tip "
+    "by playing each school's minigame, plus social credits at Gryphon's Pub. Give the player one short, upbeat, specific tip "
     "(at most two sentences, under 60 words) about which school to visit next and why. "
     "Plain text only, no lists or markdown."
 )
@@ -78,7 +78,7 @@ def build_messages(profile, credits):
         )
     else:
         who = "The player has not picked a home school yet."
-    progress = ", ".join(f"{name}: {credits.get(slug, 0)}" for slug, name in SCHOOL_NAMES.items())
+    progress = ", ".join(f"{name}: {credits.get(slug, 0)}" for slug, name in LOCATION_NAMES.items())
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": f"{who} Credits so far by school: {progress}."},

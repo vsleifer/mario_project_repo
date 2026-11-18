@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 
-from .schools import AVATAR_CHOICES, AVATAR_EMOJI, SCHOOLS
+from .schools import AVATAR_CHOICES, AVATAR_EMOJI, LOCATIONS, SCHOOLS
 
 
 class ABEvent(models.Model):
@@ -42,10 +42,13 @@ class Profile(models.Model):
 
 
 class GameScore(models.Model):
-    """One finished minigame play. Each play's score counts as credits at that school."""
+    """One finished minigame play. Each play's score counts as credits at that place.
+
+    `school` is any slug from LOCATIONS: one of the six schools, or a social spot like Gryphon's.
+    """
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="scores")
-    school = models.CharField(max_length=20, choices=SCHOOLS)
+    school = models.CharField(max_length=20, choices=LOCATIONS)
     score = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 

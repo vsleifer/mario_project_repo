@@ -16,6 +16,17 @@ SCHOOLS = [
 
 SCHOOL_NAMES = dict(SCHOOLS)
 
+# Places on the map that have minigames but aren't schools (so they can't be a
+# home school). Their credits are "social" credits.
+SOCIAL_SPOTS = [
+    ("gryphons", "Gryphon's Pub"),
+]
+
+# Every place a player can visit and earn credits: the six schools, then the rest.
+LOCATIONS = SCHOOLS + SOCIAL_SPOTS
+LOCATION_NAMES = dict(LOCATIONS)
+SOCIAL_SLUGS = {slug for slug, _ in SOCIAL_SPOTS}
+
 # (slug, label, emoji). Emoji keep the set fixed without shipping image assets.
 AVATARS = [
     ("owl", "Owl", "🦉"),
@@ -34,11 +45,13 @@ AVATAR_EMOJI = {slug: emoji for slug, _, emoji in AVATARS}
 #   SOM: Evans Hall, 165 Whitney Ave      Environment: Kroon Hall, 195 Prospect St
 #   Law: 127 Wall St                      Drama: University Theatre, 222 York St
 #   Art: Green Hall, 1156 Chapel St       Medicine: 333 Cedar St
+#   Gryphon's Pub: Hall of Graduate Studies, 320 York St
 # `label` is where the name tag sits relative to the pin: "left" or "right".
 MAP_PINS = {
     "som": {"x": 600, "y": 128, "label": "right"},
     "environment": {"x": 470, "y": 86, "label": "left"},
-    "law": {"x": 352, "y": 222, "label": "left"},
+    "law": {"x": 352, "y": 222, "label": "right"},
+    "gryphons": {"x": 236, "y": 196, "label": "left"},
     "drama": {"x": 228, "y": 344, "label": "left"},
     "art": {"x": 262, "y": 418, "label": "right"},
     "medicine": {"x": 170, "y": 506, "label": "right"},

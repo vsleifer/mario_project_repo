@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ game.title }} · {{ school_name }} · Grad School Party{% endblock %}
+
+{% block content %}
+<section class="dashboard game-page">
+  <p class="eyebrow">{{ game.place }}</p>
+  <h1>{{ game.title }}</h1>
+  <p class="intro">{{ game.intro }}</p>
+
+  <div id="minigame" class="game-shell"
+       data-score-url="{% url 'submit_score' school_slug %}"
+       data-credits-label="{{ game.credits_label }}">
+    {% csrf_token %}
+    <div class="game-hud" aria-live="polite">
+      <span>Score <strong data-hud="score">0</strong></span>
+      <span data-hud="status"></span>
+      <span>Time <strong data-hud="time">–</strong>s</span>
+      <span>Best <strong data-hud="best">{{ best_score }}</strong></span>
+    </div>
+    <div class="game-stage">
+      <canvas width="360" height="540" tabindex="0" role="img" aria-label="{{ game.title }}. {{ game.controls }}"></canvas>
+      <div class="game-overlay" data-panel="start">
+        <p class="game-overlay-title">{{ game.title }}</p>
+        <p>{{ game.controls }}</p>
+        <button class="primary-button" type="button" data-action="start">Start</button>
+      </div>
+      <div class="game-overlay" data-panel="over" hidden>
+        <p class="game-overlay-title">{{ game.over_title }}</p>
+        <p>You scored <strong data-result="score">0</strong>.</p>
+        <p class="game-save" data-result="save">Saving…</p>
+        <div class="game-actions">
+          <button class="primary-button" type="button" data-action="start">Play again</button>
+          <a class="text-button" href="{% url 'dashboard' %}">Back to the map</a>
+        </div>
+      </div>
+    </div>
+    {% if game.has_sound %}
+      <p class="game-options"><label><input type="checkbox" data-option="mute"> Mute music</label></p>
+    {% endif %}
+  </div>
+  <p class="form-footnote"><a href="{% url 'dashboard' %}">Back to the campus map</a></p>
+</section>
+<script src="{% static 'js/minigame.js' %}" defer></script>
+<script src="{% static game.script %}" defer></script>
+{% endblock %}
