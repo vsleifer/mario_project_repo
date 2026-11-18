@@ -1,6 +1,6 @@
 # Grad School Party
 
-Grad School Party is a Yale MGT 656 project: a campus game across six Yale graduate schools. Players sign up, pick a home school and avatar, explore a campus map, and can ask an AI "Dean" for a tip. Minigames and leaderboards are planned for later sprints.
+Grad School Party is a Yale MGT 656 project: a campus game across six Yale graduate schools. Players sign up, pick a home school and avatar, explore an illustrated map of Yale in New Haven, play minigames to earn credits at each school (the Law School's "Library Stack" is the first), and can ask an AI "Dean" for a tip. More minigames and leaderboards are planned for later sprints.
 
 ## Project Status
 
@@ -79,7 +79,7 @@ Run the test suite against the PostgreSQL database configured by `DATABASE_URL`:
 python manage.py test
 ```
 
-The tests cover signup, login/logout, dashboard access control, user persistence, repeatable grader creation, profiles and the campus map, the AI advisor, and the A/B page, event counts, and stats response. OpenRouter is always mocked, so the tests make no network calls. Django creates and removes a separate test database automatically.
+The tests cover signup, login/logout, dashboard access control, user persistence, repeatable grader creation, profiles and the campus map, the minigame score endpoint (range, login, and CSRF checks), the AI advisor, and the A/B page, event counts, and stats response. OpenRouter is always mocked, so the tests make no network calls. Django creates and removes a separate test database automatically.
 
 ## Deployment
 

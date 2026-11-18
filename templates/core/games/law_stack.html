@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ game.title }} · Law · Grad School Party{% endblock %}
+
+{% block content %}
+<section class="dashboard game-page">
+  <p class="eyebrow">Law School · Lillian Goldman Law Library</p>
+  <h1>{{ game.title }}</h1>
+  <p class="intro">Finals week, and the casebooks won't shelve themselves. Drop each book onto the pile: whatever hangs over the edge falls off. You have 45 seconds. A perfectly lined-up book is worth double.</p>
+
+  <div id="law-stack" class="game-shell"
+       data-score-url="{% url 'submit_score' school_slug %}"
+       data-max-score="{{ game.max_score }}">
+    {% csrf_token %}
+    <div class="game-hud" aria-live="polite">
+      <span>Score <strong data-hud="score">0</strong></span>
+      <span>Time <strong data-hud="time">45</strong>s</span>
+      <span>Best <strong data-hud="best">{{ best_score }}</strong></span>
+    </div>
+    <div class="game-stage">
+      <canvas width="360" height="540" aria-label="Library Stack game. Press Space, or tap, to drop a book." role="img"></canvas>
+      <div class="game-overlay" data-panel="start">
+        <p class="game-overlay-title">Library Stack</p>
+        <p>Press <kbd>Space</kbd> or tap to drop each book.</p>
+        <button class="primary-button" type="button" data-action="start">Start</button>
+      </div>
+      <div class="game-overlay" data-panel="over" hidden>
+        <p class="game-overlay-title">Time to file your brief</p>
+        <p>You scored <strong data-result="score">0</strong>.</p>
+        <p class="game-save" data-result="save">Saving…</p>
+        <div class="game-actions">
+          <button class="primary-button" type="button" data-action="start">Play again</button>
+          <a class="text-button" href="{% url 'dashboard' %}">Back to the map</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="form-footnote"><a href="{% url 'dashboard' %}">Back to the campus map</a></p>
+</section>
+<script src="{% static 'js/law_stack.js' %}" defer></script>
+{% endblock %}

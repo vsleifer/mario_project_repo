@@ -1,3 +1,5 @@
+import json
+import logging
 from datetime import timedelta
 
 from django.conf import settings
@@ -6,16 +8,18 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Sum
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from . import ai
-
 from .forms import ProfileForm, SignupForm
+from .minigames import MINIGAMES
 from .models import AdvisorTip, GameScore, Profile
-from .schools import SCHOOL_NAMES, SCHOOLS
+from .schools import MAP_PINS, SCHOOL_NAMES, SCHOOLS
+
+logger = logging.getLogger(__name__)
 
 
 def _credits_by_school(user):
@@ -42,6 +46,8 @@ def dashboard(request):
             "name": name,
             "credits": credits.get(slug, 0),
             "is_home": profile is not None and profile.home_school == slug,
+            "has_game": slug in MINIGAMES,
+            "pin": MAP_PINS[slug],
         }
         for slug, name in SCHOOLS
     ]
@@ -92,8 +98,33 @@ def edit_profile(request):
 def play_school(request, school):
     if school not in SCHOOL_NAMES:
         raise Http404("Unknown school")
-    # Placeholder until each school's minigame exists (story #14 builds the first one).
-    return render(request, "core/play_placeholder.html", {"school_slug": school, "school_name": SCHOOL_NAMES[school]})
+    context = {"school_slug": school, "school_name": SCHOOL_NAMES[school]}
+    game = MINIGAMES.get(school)
+    if game is None:
+        return render(request, "core/play_placeholder.html", context)
+    best = GameScore.objects.filter(user=request.user, school=school).order_by("-score").first()
+    context.update(game=game, best_score=best.score if best else 0)
+    return render(request, game["template"], context)
+
+
+@login_required
+@require_POST
+def submit_score(request, school):
+    """Save one finished round. Body: JSON {"score": <int>}. Rejects scores outside 0..max_score."""
+    game = MINIGAMES.get(school)
+    if game is None:
+        raise Http404("No minigame for this school")
+    try:
+        score = json.loads(request.body)["score"]
+    except (ValueError, KeyError, TypeError):
+        return JsonResponse({"error": "Send JSON like {\"score\": 12}."}, status=400)
+    if isinstance(score, bool) or not isinstance(score, int) or not 0 <= score <= game["max_score"]:
+        logger.warning("Rejected %s score %r from user %s", school, score, request.user.pk)
+        return JsonResponse({"error": f"Score must be a whole number from 0 to {game['max_score']}."}, status=400)
+
+    GameScore.objects.create(user=request.user, school=school, score=score)
+    total = GameScore.objects.filter(user=request.user, school=school).aggregate(total=Sum("score"))["total"]
+    return JsonResponse({"saved": True, "score": score, "school_credits": total})
 
 
 def signup(request):
