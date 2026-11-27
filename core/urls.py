@@ -2,7 +2,6 @@ from django.urls import path
 
 from . import ab_test, views
 
-
 # The A/B path is the first 7 characters of: printf %s wandering-shape | shasum
 AB_TEST_HASH = "341e00b"
 

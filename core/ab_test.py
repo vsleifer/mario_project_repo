@@ -13,7 +13,6 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from .models import ABEvent
 
-
 VARIANTS = ("kudos", "thanks")
 SESSION_VARIANT = "ab_variant"
 SESSION_VISITOR = "ab_visitor_id"
