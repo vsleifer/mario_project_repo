@@ -1,0 +1,12 @@
+# Linter settings. CI runs `ruff check .` on every pull request.
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+extend-exclude = ["core/migrations", ".agents"]
+
+[tool.ruff.lint]
+# Ruff's defaults (syntax errors, undefined names, unused imports/variables)
+# plus import sorting.
+extend-select = ["I"]
+# RUF012 flags Django's normal `class Meta` lists and `choices`, which are fine.
+ignore = ["RUF012"]

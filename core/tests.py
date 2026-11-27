@@ -16,8 +16,7 @@ from . import ai
 from .ai import AdvisorUnavailable
 from .minigames import MINIGAMES
 from .models import AdvisorTip, GameScore, Profile
-from .schools import LOCATIONS, SCHOOLS
-
+from .schools import LOCATIONS
 
 User = get_user_model()
 

@@ -1,0 +1,3 @@
+# Tools for development and CI only; production installs requirements.txt.
+-r requirements.txt
+ruff>=0.17,<0.18
